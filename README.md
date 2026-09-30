@@ -145,8 +145,50 @@ server/src/
 ## Build and run
 
 ```bash
-npm run build     # Type-check and create the optimized Vite build
-npm start         # Start the Express API (production build can be served by a separate static host)
+npm install
+npm run build     # Type-check and create the optimized Vite build in dist/
+npm start         # Express API + the built web app on http://localhost:4000
 ```
 
-For a static production frontend, serve the generated `dist/` folder and configure the host to proxy `/api` to the Express service. The API binds to `0.0.0.0` and accepts same-origin deployment by default.
+`npm start` serves the SPA from `dist/` (with client-side routing fallback) and the REST API under `/api`, so a single service hosts the whole application and the frontend keeps using same-origin `/api` calls. If `dist/` is absent the server still runs as an API-only service. Set `WEB_ROOT` to serve the frontend from a different directory.
+
+## Deployment
+
+`npm run build && npm start` is the complete deployment contract. The API binds to `0.0.0.0` and honours `PORT`.
+
+### One-service deployment
+
+| Target | How |
+| --- | --- |
+| Docker | `docker build -t minegov-ai . && docker run -p 4000:4000 -e JWT_SECRET=... minegov-ai` |
+| Render | Create a Blueprint from this repository — `render.yaml` builds `npm ci && npm run build` and starts `npm start` |
+| Any Node host (Railway, Fly.io, App Engine, VM) | Build, then run `npm start` with the environment variables below |
+
+### Demo/preview deployment without Firebase
+
+For a published demo or stakeholder preview, set:
+
+```env
+NODE_ENV=production
+JWT_SECRET=<long-random-secret>
+ALLOW_LOCAL_DEMO_STORE=true
+```
+
+This intentionally permits the JSON store and seeds the DEMO DATA accounts so the deployed site is immediately usable. **Data is not durable on ephemeral hosting** (the JSON store lives on the service disk) and demo credentials must not be used for real records. Remove `ALLOW_LOCAL_DEMO_STORE` and configure Firebase Firestore for an operational deployment — the server then refuses to start in production unless Firestore is reachable.
+
+Set `ALLOW_IFRAME_EMBED=true` only if the app must render inside an iframe of an approved host; production defaults to `X-Frame-Options: SAMEORIGIN`.
+
+### Verify a deployment
+
+After deploying, run the verification script against the public URL. It checks single-origin hosting, API protection, every register and report, the AI assistant, and then runs the whole governance workflow (inspection → violation → corrective action → evidence → verification → auto-closed violation) and confirms the evidence endpoint stays behind authentication:
+
+```bash
+npm run verify:deployment -- https://your-deployment.example.com
+npm run verify:deployment:readonly -- https://your-deployment.example.com   # skip write checks
+```
+
+Write checks need credentials (`DEMO_EMAIL` / `DEMO_PASSWORD`, defaulting to the seeded demo accounts). They create records clearly titled "Deployment check", then close them; `--read-only` avoids creating anything.
+
+### Static frontend + separate API
+
+To host the frontend on a static/CDN host (for example Netlify, which `netlify.toml` already configures), publish `dist/` and either set `VITE_API_URL` to the API origin at build time (`CORS_ORIGIN` must then list the frontend origin) or proxy `/api` to the Express service.

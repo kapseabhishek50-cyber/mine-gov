@@ -93,9 +93,16 @@ async function resolveFirebaseOptions() {
   return null;
 }
 
+// Explicit opt-in for demo/preview deployments that intentionally run without
+// Firebase Firestore. Never enable this for a real operational deployment.
+const allowLocalDemoStore = process.env.ALLOW_LOCAL_DEMO_STORE === 'true';
+
 export async function connectDatabase() {
-  if (process.env.NODE_ENV === 'production' && !isFirebaseConfigured()) {
-    throw new Error('Firebase Firestore credentials are required in production.');
+  if (process.env.NODE_ENV === 'production' && !isFirebaseConfigured() && !allowLocalDemoStore) {
+    throw new Error('Firebase Firestore credentials are required in production (or set ALLOW_LOCAL_DEMO_STORE=true for an intentional demo deployment).');
+  }
+  if (process.env.NODE_ENV === 'production' && !isFirebaseConfigured() && allowLocalDemoStore) {
+    console.warn('⚠ ALLOW_LOCAL_DEMO_STORE=true: running in production without Firebase Firestore. Use a Firebase project for any real data.');
   }
   if (isFirebaseConfigured()) {
     try {
@@ -116,7 +123,7 @@ export async function connectDatabase() {
       console.log('✓ Connected to Firebase Firestore');
       return 'firebase';
     } catch (error) {
-      if (process.env.NODE_ENV === 'production') {
+      if (process.env.NODE_ENV === 'production' && !allowLocalDemoStore) {
         throw new Error(`Firebase Firestore connection failed: ${error.message}`);
       }
       console.warn(`Firebase Firestore unavailable (${error.message}). Using the local JSON development store.`);
