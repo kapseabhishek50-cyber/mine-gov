@@ -1,0 +1,10 @@
+node_modules
+dist
+.git
+.github
+.env
+*.log
+server/data/store.json
+server/uploads/*
+!server/uploads/.gitkeep
+firebase-service-account*.json

@@ -11,7 +11,9 @@
     "preview": "vite preview --host 0.0.0.0",
     "start": "node server/src/index.js",
     "seed": "node server/src/seed/runSeed.js",
-    "test": "node --test server/src/services/*.test.js"
+    "test": "node --test server/src/services/*.test.js",
+    "verify:deployment": "node scripts/verify-deployment.mjs",
+    "verify:deployment:readonly": "node scripts/verify-deployment.mjs --read-only"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

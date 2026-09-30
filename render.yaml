@@ -1,0 +1,27 @@
+# Render blueprint: deploys MineGov AI as one web service (Express API + built SPA).
+# Create a new Blueprint from this repository, then set JWT_SECRET in the dashboard.
+services:
+  - type: web
+    name: minegov-ai
+    runtime: node
+    plan: starter
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      # Demo deployment without Firebase: seeds DEMO DATA and keeps data in a JSON
+      # store on the service disk. Remove this once Firebase Firestore is configured
+      # (the service refuses to start in production without Firestore or this flag).
+      - key: ALLOW_LOCAL_DEMO_STORE
+        value: "true"
+      # Uncomment for a real deployment instead of the demo store above:
+      # - key: FIREBASE_PROJECT_ID
+      #   sync: false
+      # - key: FIREBASE_CLIENT_EMAIL
+      #   sync: false
+      # - key: FIREBASE_PRIVATE_KEY
+      #   sync: false
