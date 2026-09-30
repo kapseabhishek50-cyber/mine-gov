@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { create, list, newId, update } from '../config/database.js';
+import { create, databaseMode, list, newId, remove, update } from '../config/database.js';
 
 const day = 24 * 60 * 60 * 1000;
 const ago = (days) => new Date(Date.now() - days * day).toISOString();
@@ -65,12 +65,13 @@ export async function seedDemoData({ force = false } = {}) {
   if (existingUsers.length && !force) return { seeded: false, message: 'Data already exists.' };
   if (force) {
     const collections = ['auditLogs', 'alerts', 'actions', 'violations', 'inspections', 'compliances', 'users', 'mines'];
-    // Force seeding is intentionally only supported in a clean local JSON environment via a fresh store.
-    if (process.env.MONGO_URI) throw new Error('Use a clean demo database to reseed MongoDB.');
+    // Force seeding is intentionally only supported in a local JSON environment or Firestore Emulator.
+    if (databaseMode() === 'firebase' && !process.env.FIRESTORE_EMULATOR_HOST) {
+      throw new Error('Use a clean Firebase Firestore project or the Firestore Emulator to force-reseed.');
+    }
     for (const collection of collections) {
       const items = await list(collection);
       for (const item of items) {
-        const { remove } = await import('../config/database.js');
         await remove(collection, item.id);
       }
     }

@@ -6,11 +6,11 @@ MineGov AI is a full-stack enterprise MVP for the coal-mine governance workflow:
 
 > **Mine → Compliance → Inspection → Violation → Corrective Action → Evidence → Verification → Risk Score → Dashboard → AI Summary**
 
-The application includes a responsive React dashboard, role-based access, REST API, MongoDB/Mongoose models, evidence uploads, a deterministic explainable risk engine, automatic alerting, CSV reporting, an optional AI provider layer and seeded demonstration records.
+The application includes a responsive React dashboard, role-based access, REST API, Firebase Cloud Firestore collections, evidence uploads, a deterministic explainable risk engine, automatic alerting, CSV reporting, an optional AI provider layer and seeded demonstration records.
 
 ## Quick start
 
-Requirements: Node.js 20+, npm 10+. MongoDB is recommended; for a zero-configuration local preview the API uses a persistent JSON development store when `MONGO_URI` is not set.
+Requirements: Node.js 20+, npm 10+. Firebase Cloud Firestore is supported for cloud persistence; for a zero-configuration local preview the API uses a persistent JSON development store when Firebase credentials are not set.
 
 ```bash
 npm install
@@ -32,18 +32,30 @@ Shared password: `MineGov2026!`
 
 The login screen labels these as development demo accounts. Password hashes are stored in the backend. Demo account seeding and credentials should not be enabled for a public production deployment.
 
-## MongoDB-backed development
+## Firebase Cloud Firestore development
 
-For a local MongoDB instance, copy `.env.example` to `.env` and set `MONGO_URI`. Or start MongoDB with Docker Compose:
+To connect to Firebase Cloud Firestore, copy `.env.example` to `.env` and configure your Firebase Service Account credentials using any of the supported options:
 
-```bash
-docker compose up -d mongodb
-cp .env.example .env
-# Set MONGO_URI=mongodb://127.0.0.1:27017/minegov_ai
-npm run dev
-```
+1. **Individual environment variables**:
+   ```env
+   FIREBASE_PROJECT_ID=your-project-id
+   FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project-id.iam.gserviceaccount.com
+   FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+   ```
+2. **Service Account JSON file path or inline JSON**:
+   ```env
+   FIREBASE_SERVICE_ACCOUNT_PATH=./firebase-service-account.json
+   # or FIREBASE_SERVICE_ACCOUNT_JSON={...}
+   ```
+3. **Local Firestore Emulator** (via Docker Compose or Firebase CLI):
+   ```bash
+   docker compose up -d firestore-emulator
+   cp .env.example .env
+   # Set FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 and FIREBASE_PROJECT_ID=minegov-ai
+   npm run dev
+   ```
 
-If MongoDB is intentionally absent in development, the API persists writes to `server/data/store.json` (ignored by Git). In production, MongoDB and a `JWT_SECRET` are required; the server will not silently fall back to JSON persistence.
+If Firebase is intentionally absent in development, the API persists writes to `server/data/store.json` (ignored by Git). In production, Firebase Firestore credentials and a `JWT_SECRET` are required; the server will not silently fall back to JSON persistence.
 
 To seed an empty database explicitly:
 
@@ -51,7 +63,7 @@ To seed an empty database explicitly:
 npm run seed
 ```
 
-For a local JSON-store demo reset, stop the API and run `npm run seed -- --force`. The force option is intentionally refused for MongoDB so an operational database cannot be wiped accidentally. The seed script creates 5 mines, 10 users, 30 compliance records, 20 inspections, 25 violations, 20 corrective actions and 20 initial alerts. It also creates a clearly marked sample evidence file; it is not a real statutory record. Risk-related alerts may also be generated from the seeded records.
+For a local JSON-store or Firestore Emulator demo reset, stop the API and run `npm run seed -- --force`. The force option is intentionally refused for cloud Firestore projects so an operational database cannot be wiped accidentally. The seed script creates 5 mines, 10 users, 30 compliance records, 20 inspections, 25 violations, 20 corrective actions and 20 initial alerts. It also creates a clearly marked sample evidence file; it is not a real statutory record. Risk-related alerts may also be generated from the seeded records.
 
 ## Environment variables
 
@@ -64,7 +76,9 @@ See `.env.example` for the complete template.
 ### Backend
 
 - `PORT` — Express port (default `4000`)
-- `MONGO_URI` — MongoDB connection string
+- `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY` — Firebase Admin SDK service account credentials
+- `FIREBASE_SERVICE_ACCOUNT_PATH` / `FIREBASE_SERVICE_ACCOUNT_JSON` — alternative service account file path or inline JSON/base64
+- `FIRESTORE_EMULATOR_HOST` — optional local Firestore emulator host (`127.0.0.1:8080`)
 - `JWT_SECRET` — signing secret; required in production
 - `CORS_ORIGIN` — comma-separated allowed origins for production
 - `AI_PROVIDER` — `auto`, `gemini`, `openai`, or `openai-compatible`
@@ -97,8 +111,8 @@ src/
   lib/              API client, formatting utilities
   pages/            Dashboard, registers, field workflow, map, reports, AI, admin
 server/src/
-  config/           MongoDB connection and local development persistence adapter
-  models/           Mongoose schemas and indexes
+  config/           Firebase Cloud Firestore connection and local development persistence adapter
+  models/           Firestore collection definitions and document normalizers
   middleware/       JWT/RBAC, async handling, API errors
   routes/           Authentication, governance, analytics, reports and uploads
   services/         Risk, compliance, alerts, analytics, reports, search, AI, audit
@@ -126,7 +140,7 @@ server/src/
 - Zod validates write payloads; uploads enforce file types, a 10 MB per-file limit and a file-count limit.
 - The API applies Helmet, CORS configuration and rate limiting.
 - Uploaded evidence is served through an authenticated endpoint; the frontend downloads it with the current bearer token.
-- For deployment use a strong `JWT_SECRET`, a secured MongoDB service, HTTPS, a configured `CORS_ORIGIN`, a managed/private object store and an external secrets manager.
+- For deployment use a strong `JWT_SECRET`, secured Firebase Firestore credentials, HTTPS, a configured `CORS_ORIGIN`, a managed/private object store and an external secrets manager.
 
 ## Build and run
 
