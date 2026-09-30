@@ -1,0 +1,6 @@
+MINEGOV AI · DEMO EVIDENCE
+
+This sample evidence file is for product demonstration only.
+It does not represent a real statutory record or mine inspection.
+
+This file is served statically for demo purposes when the app runs in static mode without backend.
