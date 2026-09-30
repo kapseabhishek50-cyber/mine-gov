@@ -58,7 +58,7 @@ export function AppShell() {
     {mobileOpen && <button aria-label="Close navigation" className="sidebar-scrim" onClick={() => setMobileOpen(false)} />}
     <aside className={`sidebar ${mobileOpen ? 'sidebar-open' : ''}`}>
       <Link to="/dashboard" className="brand-lockup"><span className="brand-mark"><span /><span /><span /></span><span className="brand-name">MineGov <b>AI</b><small>SMART MINE GOVERNANCE</small></span></Link>
-      <div className="workspace-chip"><span className="workspace-dot" /> DEMO ENVIRONMENT <span className="workspace-chevron">⌄</span></div>
+      <div className="workspace-chip"><span className="workspace-dot" /> {api.isStaticMode() ? 'STATIC DEMO MODE' : 'DEMO ENVIRONMENT'} <span className="workspace-chevron">⌄</span></div>
       <nav className="sidebar-nav" aria-label="Primary navigation">
         {groups.map((group) => <div className="nav-group" key={group}><div className="nav-group-label">{group}</div>{visibleNav.filter((item) => item.group === group).map((item) => {
           const Icon = item.icon; const active = location.pathname === item.href || (item.href !== '/dashboard' && location.pathname.startsWith(item.href));
@@ -87,7 +87,7 @@ export function AppShell() {
       </header>
       {profileOpen && <button className="popover-dismiss" aria-label="Close profile menu" onClick={() => setProfileOpen(false)} />}
       <main className="page-content"><Outlet /></main>
-      <footer className="app-footer"><span>MineGov AI <i>·</i> Smart Governance & Compliance</span><span>DEMO DATA <i>·</i> For demonstration purposes only</span></footer>
+      <footer className="app-footer"><span>MineGov AI <i>·</i> {api.isStaticMode() ? 'Static Demo Mode · Works offline' : 'Smart Governance & Compliance'}</span><span>{api.isStaticMode() ? 'LOCAL STORAGE · Persistent in browser' : 'DEMO DATA'} <i>·</i> For demonstration purposes only</span></footer>
     </div>
   </div>;
 }
